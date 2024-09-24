@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ToDo.Models; // Змініть на ваш простір імен
+using ToDo.Models; 
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ToDo.Controllers // Змініть на ваш простір імен
+namespace ToDo.Controllers 
 {
     public class ToDoController : Controller
     {
         private static List<ToDoItem> todoItems = new List<ToDoItem>();
-        private static int nextId = 1; // Для генерації унікальних ID
+        private static int nextId = 1; 
 
         public IActionResult Index()
         {
@@ -22,7 +22,7 @@ namespace ToDo.Controllers // Змініть на ваш простір імен
             {
                 Id = nextId++,
                 Task = task,
-                IsCompleted = false // За замовчуванням задача не виконана
+                IsCompleted = false 
             };
             todoItems.Add(todo);
             return RedirectToAction("Index");

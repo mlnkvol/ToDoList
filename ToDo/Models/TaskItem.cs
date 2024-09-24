@@ -1,9 +1,9 @@
-﻿namespace ToDo.Models // Змініть на ваш простір імен
+﻿namespace ToDo.Models 
 {
     public class ToDoItem
     {
         public int Id { get; set; }
         public string Task { get; set; }
-        public bool IsCompleted { get; set; } // Додане поле
+        public bool IsCompleted { get; set; } 
     }
 }

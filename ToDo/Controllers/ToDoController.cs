@@ -1,53 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ToDo.Models; // Змініть на ваш простір імен
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using ToDo.Models;
+using System.Linq;
 
-namespace YourNamespace.Controllers
+namespace ToDo.Controllers // Змініть на ваш простір імен
 {
     public class ToDoController : Controller
     {
-        [HttpGet]
-        public IActionResult GetItems()
+        private static List<ToDoItem> todoItems = new List<ToDoItem>();
+        private static int nextId = 1; // Для генерації унікальних ID
+
+        public IActionResult Index()
         {
-            var todoList = GetFromLocalStorage();
-            return Json(todoList);
+            return View(todoItems);
         }
 
-        [HttpPost]
-        public IActionResult AddItem([FromBody] ToDoItem newItem)
+        [HttpPost("todo/add")]
+        public IActionResult Add(string task)
         {
-            var todoList = GetFromLocalStorage();
-            newItem.Id = todoList.Count + 1;
-            todoList.Add(newItem);
-            SaveToLocalStorage(todoList);
-            return Ok(newItem);
-        }
-
-        [HttpDelete]
-        public IActionResult RemoveItem(int id)
-        {
-            var todoList = GetFromLocalStorage();
-            var itemToRemove = todoList.Find(x => x.Id == id);
-            if (itemToRemove != null)
+            var todo = new ToDoItem
             {
-                todoList.Remove(itemToRemove);
-                SaveToLocalStorage(todoList);
+                Id = nextId++,
+                Task = task,
+                IsCompleted = false // За замовчуванням задача не виконана
+            };
+            todoItems.Add(todo);
+            return RedirectToAction("Index");
+        }
+
+        [HttpDelete("todo/delete/{id}")]
+        public IActionResult Delete(int id)
+        {
+            var item = todoItems.FirstOrDefault(t => t.Id == id);
+            if (item != null)
+            {
+                todoItems.Remove(item);
                 return Ok();
             }
             return NotFound();
         }
 
-        private List<ToDoItem> GetFromLocalStorage()
+        [HttpPost("todo/complete/{id}")]
+        public IActionResult Complete(int id)
         {
-            var todoJson = HttpContext.Session.GetString("todoList");
-            return string.IsNullOrEmpty(todoJson) ? new List<ToDoItem>() : JsonConvert.DeserializeObject<List<ToDoItem>>(todoJson);
-        }
-
-        private void SaveToLocalStorage(List<ToDoItem> todoList)
-        {
-            var todoJson = JsonConvert.SerializeObject(todoList);
-            HttpContext.Session.SetString("todoList", todoJson);
+            var item = todoItems.FirstOrDefault(t => t.Id == id);
+            if (item != null)
+            {
+                item.IsCompleted = true;
+                return Ok();
+            }
+            return NotFound();
         }
     }
 }

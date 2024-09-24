@@ -1,6 +1,4 @@
-﻿@{
-    ViewData["Title"] = "ToDo List";
-}
+﻿@model IEnumerable<ToDo.Models.ToDoItem> 
 
 <!DOCTYPE html>
 <html lang="uk">
@@ -11,74 +9,61 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>Список Завдань</h1>
-    <input type="text" id="newTask" placeholder="Нове завдання">
-    <button onclick="addItem()">Додати завдання</button>
-
-    <ul id="todoList"></ul>
-
+    <h1>Список завдань</h1>
+    
+    <form id="addForm" method="post" action="/todo/add">
+        <input type="text" name="task" placeholder="Додати нове завдання" required>
+        <button type="submit">Додати</button>
+    </form>
+    
+    <ul id="todoList">
+        @foreach (var todo in Model)
+        {
+            <li class="todo-item" data-id="@todo.Id">
+                <span style="text-decoration: @(todo.IsCompleted ? "line-through" : "none")">@todo.Task</span>
+                @if (!todo.IsCompleted)
+                {
+                    <button class="complete-button">Завершити</button>
+                }
+                <button class="delete-button">Видалити</button>
+            </li>
+        }
+    </ul>
+    
     <script>
         $(document).ready(function () {
-            loadItems();
-        });
+            $('.delete-button').on('click', function () {
+                var todoItem = $(this).closest('.todo-item');
+                var todoId = todoItem.data('id');
 
-        function loadItems() {
-            $.get("/ToDo/GetItems", function (data) {
-                data.forEach(item => {
-                    $('#todoList').append(`<li>${item.task} <button onclick="removeItem(${item.id})">Видалити</button></li>`);
-                });
-            });
-        }
-
-        function addItem() {
-            const newTask = $('#newTask').val();
-            if (newTask) {
                 $.ajax({
-                    type: "POST",
-                    url: "/ToDo/AddItem",
-                    data: JSON.stringify({ task: newTask, isCompleted: false }),
-                    contentType: "application/json",
-                    success: function (item) {
-                        $('#todoList').append(`<li>${item.task} <button onclick="removeItem(${item.id})">Видалити</button></li>`);
-                        $('#newTask').val('');
+                    url: '/todo/delete/' + todoId,
+                    type: 'DELETE',
+                    success: function (result) {
+                        todoItem.remove(); // видаляємо елемент зі списку
+                    },
+                    error: function () {
+                        alert('Не вдалося видалити задачу.');
                     }
                 });
-            }
-        }
-
-        function removeItem(id) {
-            $.ajax({
-                type: "DELETE",
-                url: `/ToDo/RemoveItem?id=${id}`,
-                success: function () {
-                    $(`#todoList li:contains(${id})`).remove();
-                }
             });
-        }
 
-        function saveToLocalStorage() {
-            const todoList = [];
-            $('#todoList li').each(function () {
-                todoList.push($(this).text().trim());
-            });
-            localStorage.setItem('todoList', JSON.stringify(todoList));
-        }
+            $('.complete-button').on('click', function () {
+                var todoItem = $(this).closest('.todo-item');
+                var todoId = todoItem.data('id');
 
-        function loadFromLocalStorage() {
-            const savedList = JSON.parse(localStorage.getItem('todoList'));
-            if (savedList) {
-                savedList.forEach(task => {
-                    $('#todoList').append(`<li>${task} <button onclick="removeItem(${task.id})">Видалити</button></li>`);
+                $.ajax({
+                    url: '/todo/complete/' + todoId,
+                    type: 'POST',
+                    success: function (result) {
+                        todoItem.find('span').css('text-decoration', 'line-through'); // відмічаємо задачу як завершену
+                        $(this).remove(); // видаляємо кнопку "Завершити"
+                    }.bind(this),
+                    error: function () {
+                        alert('Не вдалося завершити задачу.');
+                    }
                 });
-            }
-        }
-
-        $(document).ready(function () {
-            loadFromLocalStorage();
-        });
-
-        $(window).on('unload', function () {
-            saveToLocalStorage();
+            });
         });
     </script>
 </body>

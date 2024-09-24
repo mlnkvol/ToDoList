@@ -7,28 +7,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ToDo List</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center; /* Вирівнювання по центру */
+            align-items: center; /* Вертикальне вирівнювання по центру */
+            height: 100vh; /* Висота на весь екран */
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #addForm {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #todoList {
+            list-style-type: none;
+            padding: 0;
+            width: 90%; /* Ширина списку завдань */
+        }
+
+        .todo-item {
+            background-color: #d3ffd3; /* світло-зелений */
+            border-radius: 10px; /* заокруглені краї */
+            margin: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 50px; /* Висота тасків */
+            cursor: move; /* Курсор переміщення */
+            width: calc(100% - 20px); /* Ширина тасків, щоб урахувати відступи */
+            max-width: 100%; /* Максимальна ширина */
+        }
+
+        .complete-checkbox {
+            margin-right: 10px; /* відстань між чекбоксом та текстом */
+        }
+
+        .delete-button {
+            background-color: #ff4c4c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+            .delete-button:hover {
+                background-color: #ff0000; /* темніший червоний при наведенні */
+            }
+    </style>
 </head>
 <body>
-    <h1>Список завдань</h1>
+    <div>
+        <h1>Список завдань</h1>
 
-    <form id="addForm" method="post" action="/todo/add">
-        <input type="text" name="task" placeholder="Додати нове завдання" required>
-        <button type="submit">Додати</button>
-    </form>
+        <form id="addForm" method="post" action="/todo/add">
+            <input type="text" name="task" placeholder="Додати нове завдання" required>
+            <button type="submit">Додати</button>
+        </form>
 
-    <ul id="todoList">
-        @foreach (var todo in Model)
-        {
-            <li class="todo-item" data-id="@todo.Id" draggable="true">
-                <span style="text-decoration: @(todo.IsCompleted ? "line-through" : "none")">@todo.Task</span>
-                @if (!todo.IsCompleted)
-                {
-                    <button class="complete-button">Завершити</button>
-                }
-                <button class="delete-button">Видалити</button>
-            </li>
-        }
-    </ul>
+        <ul id="todoList">
+            @foreach (var todo in Model)
+            {
+                <li class="todo-item" data-id="@todo.Id" draggable="true">
+                    <input type="checkbox" class="complete-checkbox" @(todo.IsCompleted ? "checked" : "")>
+                    <span style="text-decoration: @(todo.IsCompleted ? "line-through" : "none")">@todo.Task</span>
+                    <button class="delete-button">Видалити</button>
+                </li>
+            }
+        </ul>
+    </div>
 
     <script>
         // Функція для зберігання завдань у localStorage
@@ -37,7 +92,7 @@
             $('#todoList .todo-item').each(function () {
                 const id = $(this).data('id');
                 const task = $(this).find('span').text();
-                const isCompleted = $(this).find('span').css('text-decoration') === 'line-through';
+                const isCompleted = $(this).find('.complete-checkbox').is(':checked');
                 todos.push({ id: id, task: task, isCompleted: isCompleted });
             });
             localStorage.setItem('todoItems', JSON.stringify(todos));
@@ -50,8 +105,8 @@
             todos.forEach(todo => {
                 const listItem = $(`
                             <li class="todo-item" data-id="${todo.id}" draggable="true">
+                                <input type="checkbox" class="complete-checkbox" ${todo.isCompleted ? "checked" : ""}>
                                 <span style="text-decoration: ${todo.isCompleted ? 'line-through' : 'none'}">${todo.task}</span>
-                                ${!todo.isCompleted ? '<button class="complete-button">Завершити</button>' : ''}
                                 <button class="delete-button">Видалити</button>
                             </li>
                         `);
@@ -62,17 +117,20 @@
         $(document).ready(function () {
             loadFromLocalStorage(); // Завантажуємо завдання з localStorage при відкритті сторінки
 
-            // Делегування подій для кнопок "Видалити" і "Завершити"
+            // Делегування подій для кнопок "Видалити" та "checkbox"
             $('#todoList').on('click', '.delete-button', function () {
                 var todoItem = $(this).closest('.todo-item');
                 todoItem.remove(); // видаляємо елемент зі списку
                 saveToLocalStorage(); // зберігаємо зміни
             });
 
-            $('#todoList').on('click', '.complete-button', function () {
+            $('#todoList').on('change', '.complete-checkbox', function () {
                 var todoItem = $(this).closest('.todo-item');
-                todoItem.find('span').css('text-decoration', 'line-through'); // відмічаємо задачу як завершену
-                $(this).remove(); // видаляємо кнопку "Завершити"
+                if ($(this).is(':checked')) {
+                    todoItem.find('span').css('text-decoration', 'line-through'); // відмічаємо задачу як завершену
+                } else {
+                    todoItem.find('span').css('text-decoration', 'none'); // знімаємо позначку
+                }
                 saveToLocalStorage(); // зберігаємо зміни
             });
 
@@ -84,8 +142,8 @@
                 const newId = $('#todoList .todo-item').length + 1; // Генеруємо новий ID
                 const listItem = $(`
                             <li class="todo-item" data-id="${newId}" draggable="true">
+                                <input type="checkbox" class="complete-checkbox">
                                 <span>${task}</span>
-                                <button class="complete-button">Завершити</button>
                                 <button class="delete-button">Видалити</button>
                             </li>
                         `);
@@ -94,17 +152,17 @@
                 saveToLocalStorage(); // Зберігаємо зміни
             });
 
-            // Drag-and-Drop функціональність
+            // Новий метод drag-and-drop
             let draggedItem = null;
 
-            $('#todoList').on('dragstart', '.todo-item', function (e) {
-                draggedItem = this;
-                $(this).css('opacity', '0.5');
+            $('#todoList').on('dragstart', '.todo-item', function () {
+                draggedItem = $(this);
+                $(this).css('opacity', '0.7'); // Зменшуємо прозорість для кращої візуалізації
             });
 
-            $('#todoList').on('dragend', function () {
-                $(draggedItem).css('opacity', '1');
-                draggedItem = null;
+            $('#todoList').on('dragend', '.todo-item', function () {
+                $(this).css('opacity', '1'); // Відновлюємо прозорість
+                draggedItem = null; // Скидаємо draggedItem
             });
 
             $('#todoList').on('dragover', function (e) {
@@ -114,30 +172,15 @@
             $('#todoList').on('drop', function (e) {
                 e.preventDefault();
                 if (draggedItem) {
-                    const afterElement = getDragAfterElement($(this), e.clientY);
-                    if (afterElement == null) {
-                        $(this).append(draggedItem);
+                    const target = $(e.target).closest('.todo-item'); // Отримуємо елемент, на який скидаємо
+                    if (target.length && target[0] !== draggedItem[0]) {
+                        draggedItem.insertBefore(target); // Вставляємо перетягнутий елемент перед цільовим
                     } else {
-                        $(this).insertBefore(draggedItem, afterElement);
+                        $(this).append(draggedItem); // Якщо немає цільового, додаємо в кінець
                     }
                     saveToLocalStorage(); // Зберігаємо новий порядок
                 }
             });
-
-            function getDragAfterElement(container, y) {
-                const draggableElements = [...container.children('.todo-item:not(.dragging)')];
-
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            }
         });
     </script>
 </body>

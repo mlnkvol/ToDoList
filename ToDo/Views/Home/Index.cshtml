@@ -1,0 +1,85 @@
+﻿@{
+    ViewData["Title"] = "ToDo List";
+}
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo List</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Список Завдань</h1>
+    <input type="text" id="newTask" placeholder="Нове завдання">
+    <button onclick="addItem()">Додати завдання</button>
+
+    <ul id="todoList"></ul>
+
+    <script>
+        $(document).ready(function () {
+            loadItems();
+        });
+
+        function loadItems() {
+            $.get("/ToDo/GetItems", function (data) {
+                data.forEach(item => {
+                    $('#todoList').append(`<li>${item.task} <button onclick="removeItem(${item.id})">Видалити</button></li>`);
+                });
+            });
+        }
+
+        function addItem() {
+            const newTask = $('#newTask').val();
+            if (newTask) {
+                $.ajax({
+                    type: "POST",
+                    url: "/ToDo/AddItem",
+                    data: JSON.stringify({ task: newTask, isCompleted: false }),
+                    contentType: "application/json",
+                    success: function (item) {
+                        $('#todoList').append(`<li>${item.task} <button onclick="removeItem(${item.id})">Видалити</button></li>`);
+                        $('#newTask').val('');
+                    }
+                });
+            }
+        }
+
+        function removeItem(id) {
+            $.ajax({
+                type: "DELETE",
+                url: `/ToDo/RemoveItem?id=${id}`,
+                success: function () {
+                    $(`#todoList li:contains(${id})`).remove();
+                }
+            });
+        }
+
+        function saveToLocalStorage() {
+            const todoList = [];
+            $('#todoList li').each(function () {
+                todoList.push($(this).text().trim());
+            });
+            localStorage.setItem('todoList', JSON.stringify(todoList));
+        }
+
+        function loadFromLocalStorage() {
+            const savedList = JSON.parse(localStorage.getItem('todoList'));
+            if (savedList) {
+                savedList.forEach(task => {
+                    $('#todoList').append(`<li>${task} <button onclick="removeItem(${task.id})">Видалити</button></li>`);
+                });
+            }
+        }
+
+        $(document).ready(function () {
+            loadFromLocalStorage();
+        });
+
+        $(window).on('unload', function () {
+            saveToLocalStorage();
+        });
+    </script>
+</body>
+</html>

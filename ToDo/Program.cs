@@ -1,40 +1,36 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace ToDo 
+var builder = WebApplication.CreateBuilder(args);
+
+// Налаштування сервісів
+builder.Services.AddControllersWithViews();
+
+var app = builder.Build();
+
+// Налаштування middleware
+if (!app.Environment.IsDevelopment())
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddControllersWithViews();
-            var app = builder.Build();
-
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-                app.UseHsts();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
-            app.UseRouting();
-
-            app.UseAuthorization();
-
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=ToDo}/{action=Index}/{id?}");
-
-            app.Run();
-        }
-    }
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseAuthorization();
+
+// Налаштування маршрутів
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=ToDo}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "sse",
+    pattern: "sse",
+    defaults: new { controller = "Sse", action = "Sse" });
+
+app.Run();

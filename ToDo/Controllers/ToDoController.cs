@@ -1,55 +1,54 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ToDo.Models; 
-using System.Collections.Generic;
-using System.Linq;
+using ToDo.SSE.Controllers;
+using ToDo.Models;
 
-namespace ToDo.Controllers 
+namespace ToDo.Controllers
 {
     public class ToDoController : Controller
     {
-        private static List<ToDoItem> todoItems = new List<ToDoItem>();
-        private static int nextId = 1; 
+        private static List<ToDoItem> _todoItems = new();
 
         public IActionResult Index()
         {
-            return View(todoItems);
+            return View(_todoItems);
         }
 
-        [HttpPost("todo/add")]
+        [HttpPost]
         public IActionResult Add(string task)
         {
-            var todo = new ToDoItem
+            var newItem = new ToDoItem
             {
-                Id = nextId++,
+                Id = _todoItems.Count + 1,
                 Task = task,
-                IsCompleted = false 
+                IsCompleted = false
             };
-            todoItems.Add(todo);
+            _todoItems.Add(newItem);
+            SseController.SendUpdate("Task list updated");
             return RedirectToAction("Index");
         }
 
-        [HttpDelete("todo/delete/{id}")]
-        public IActionResult Delete(int id)
+        [HttpPost]
+        public IActionResult Remove(int id)
         {
-            var item = todoItems.FirstOrDefault(t => t.Id == id);
+            var item = _todoItems.FirstOrDefault(x => x.Id == id);
             if (item != null)
             {
-                todoItems.Remove(item);
-                return Ok();
+                _todoItems.Remove(item);
+                SseController.SendUpdate("Task list updated");
             }
-            return NotFound();
+            return RedirectToAction("Index");
         }
 
-        [HttpPost("todo/complete/{id}")]
-        public IActionResult Complete(int id)
+        [HttpPost]
+        public IActionResult ToggleComplete(int id)
         {
-            var item = todoItems.FirstOrDefault(t => t.Id == id);
+            var item = _todoItems.FirstOrDefault(x => x.Id == id);
             if (item != null)
             {
-                item.IsCompleted = true;
-                return Ok();
+                item.IsCompleted = !item.IsCompleted;
+                SseController.SendUpdate("Task list updated");
             }
-            return NotFound();
+            return RedirectToAction("Index");
         }
     }
 }

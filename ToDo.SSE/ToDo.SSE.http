@@ -1,0 +1,11 @@
+@ToDo.SSE_HostAddress = http://localhost:5022
+
+GET {{ToDo.SSE_HostAddress}}/todos/
+Accept: application/json
+
+###
+
+GET {{ToDo.SSE_HostAddress}}/todos/1
+Accept: application/json
+
+###
